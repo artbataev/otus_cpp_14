@@ -2,8 +2,8 @@
 #include <sstream>
 #include <fstream>
 #include <string>
-#include "map_reduce_runner.h"
 #include <algorithm>
+#include "map_reduce_runner.h"
 
 class PrefixMapper {
     using kv_t = std::pair<std::string, std::string>;

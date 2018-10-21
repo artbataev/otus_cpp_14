@@ -5,6 +5,7 @@
 #include <fstream>
 #include <thread>
 #include <chrono>
+#include <algorithm>
 
 template<typename MapCls, typename ReduceCls>
 class MapReduceRunner {
