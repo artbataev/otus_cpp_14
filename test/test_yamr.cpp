@@ -35,8 +35,17 @@ TEST_P(AssignmentTestFromFile, AssignmentExample) {
 
 INSTANTIATE_TEST_CASE_P(MyGroup, AssignmentTestFromFile, ::testing::Values(
         TestParams{PROJECT_SOURCE_DIR + "/test/data/test.1.in.txt"s, 1, 1, 8},
+        TestParams{PROJECT_SOURCE_DIR + "/test/data/test.1.in.txt"s, 2, 1, 8},
+        TestParams{PROJECT_SOURCE_DIR + "/test/data/test.1.in.txt"s, 1, 2, 8},
+        TestParams{PROJECT_SOURCE_DIR + "/test/data/test.1.in.txt"s, 4, 4, 8},
         TestParams{PROJECT_SOURCE_DIR + "/test/data/test.2.in.txt"s, 1, 1, 12},
-        TestParams{PROJECT_SOURCE_DIR + "/test/data/test.3.in.txt"s, 1, 1, 13}
+        TestParams{PROJECT_SOURCE_DIR + "/test/data/test.2.in.txt"s, 2, 1, 12},
+        TestParams{PROJECT_SOURCE_DIR + "/test/data/test.2.in.txt"s, 1, 2, 12},
+        TestParams{PROJECT_SOURCE_DIR + "/test/data/test.2.in.txt"s, 3, 5, 12},
+        TestParams{PROJECT_SOURCE_DIR + "/test/data/test.3.in.txt"s, 1, 1, 13},
+        TestParams{PROJECT_SOURCE_DIR + "/test/data/test.3.in.txt"s, 2, 1, 13},
+        TestParams{PROJECT_SOURCE_DIR + "/test/data/test.3.in.txt"s, 1, 2, 13},
+        TestParams{PROJECT_SOURCE_DIR + "/test/data/test.3.in.txt"s, 2, 8, 13}
 ));
 
 int main(int argc, char **argv) {

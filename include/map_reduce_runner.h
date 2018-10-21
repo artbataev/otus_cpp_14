@@ -81,10 +81,11 @@ namespace mapreduce {
                     buffer[last_j].values.emplace_back(elem.second);
                 }
             }
-            std::vector<reduce_result_t> result;
+            int result = 0;
             for (const auto& elem: buffer)
-                result.emplace_back(reducer(elem.key, elem.values));
-            return result;
+                result = reducer(elem.key, elem.values);
+
+            return {result};
         }
 
         void run_shuffle() {
@@ -101,8 +102,10 @@ namespace mapreduce {
             std::string current_email;
             MapCls map_func{};
             while (file.tellg() < i_end && (file >> current_email)) {
-                auto map_result = map_func(filename, current_email);
-                std::move(map_result.begin(), map_result.end(), std::back_inserter(map_results[container_idx]));
+                if (file.tellg() <= i_end) { // additional check boundaries
+                    auto map_result = map_func(filename, current_email);
+                    std::move(map_result.begin(), map_result.end(), std::back_inserter(map_results[container_idx]));
+                }
             }
             file.close();
             std::sort(map_results[container_idx].begin(), map_results[container_idx].end());
