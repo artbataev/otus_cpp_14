@@ -10,9 +10,12 @@ project(yamr VERSION ${PROJECT_VERSION} LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 
+find_package(Threads)
 include_directories("${PROJECT_SOURCE_DIR}/include")
 
 add_executable(yamr src/main.cpp)
+target_link_libraries(yamr
+        ${CMAKE_THREAD_LIBS_INIT})
 
 install(TARGETS yamr RUNTIME DESTINATION bin)
 
