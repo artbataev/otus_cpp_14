@@ -30,7 +30,7 @@ namespace prefix {
                 bool all_equal = true;
                 // if prefix is equal to all values, so no need to make unique by adding 1
                 for (const auto& value: values)
-                    if (key != value) {
+                    if (key.size() != value.size()) {
                         all_equal = false;
                         break;
                     }
