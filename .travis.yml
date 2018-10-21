@@ -1,0 +1,36 @@
+language: cpp
+compiler: gcc
+dist: trusty
+
+addons:
+  apt:
+    sources:
+    - ubuntu-toolchain-r-test
+    packages:
+    - g++-8
+    - libgtest-dev
+    - cmake
+
+before_script:
+- sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 90
+# gtest
+#- cd /usr/src/gtest
+#- sudo cmake .
+#- sudo make
+#- sudo cp *.a /usr/lib
+#- cd "${TRAVIS_BUILD_DIR}"
+
+script:
+- cmake .
+- cmake --build .
+#- ctest -VV # run GTest
+#- cmake --build . --target test
+- cmake --build . --target package
+
+deploy:
+  provider: script
+  skip_cleanup: true
+  script:
+  - curl -T yamr-0.0.$TRAVIS_BUILD_NUMBER-Linux.deb -u artbataev:$BINTRAY_API_KEY "https://api.bintray.com/content/artbataev1/Otus_Assignments/Otus_Cpp_14/$TRAVIS_BUILD_NUMBER/yamr-0.0.$TRAVIS_BUILD_NUMBER-Linux.deb;publish=1"
+  on:
+    branch: master
