@@ -14,16 +14,16 @@ addons:
 before_script:
 - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 90
 # gtest
-#- cd /usr/src/gtest
-#- sudo cmake .
-#- sudo make
-#- sudo cp *.a /usr/lib
-#- cd "${TRAVIS_BUILD_DIR}"
+- cd /usr/src/gtest
+- sudo cmake .
+- sudo make
+- sudo cp *.a /usr/lib
+- cd "${TRAVIS_BUILD_DIR}"
 
 script:
 - cmake .
 - cmake --build .
-#- ctest -VV # run GTest
+- ctest -VV # run GTest
 #- cmake --build . --target test
 - cmake --build . --target package
 

@@ -26,8 +26,19 @@ namespace prefix {
 
         int operator()(const std::string& key, const std::vector<std::string>& values) {
             f << key << "\n";
-            if (values.size() > 1)
-                result = std::max(result, static_cast<int>(key.size()) + 1);
+            if (values.size() > 1) {
+                bool all_equal = true;
+                // if prefix is equal to all values, so no need to make unique by adding 1
+                for (const auto& value: values)
+                    if (key != value) {
+                        all_equal = false;
+                        break;
+                    }
+                auto current_result = static_cast<int>(key.size());
+                if (!all_equal)
+                    current_result++;
+                result = std::max(result, current_result);
+            }
             return result;
         }
 
