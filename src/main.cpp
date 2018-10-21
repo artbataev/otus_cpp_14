@@ -2,9 +2,43 @@
 #include <sstream>
 #include <fstream>
 #include <string>
+#include "map_reduce_runner.h"
+#include <algorithm>
 
-bool file_exists(const std::string& file_name) {
-    std::ifstream infile(file_name);
+class PrefixMapper {
+    using kv_t = std::pair<std::string, std::string>;
+public:
+    std::vector<kv_t> operator()(const std::string& key, const std::string& email) {
+        std::vector<kv_t> result;
+        if (!email.empty()) {
+            result.reserve(email.size());
+            for (size_t n_prefix_elements = 1; n_prefix_elements <= email.size(); n_prefix_elements++) {
+                result.emplace_back(std::make_pair(email.substr(0, n_prefix_elements), email));
+            }
+        }
+        return result;
+    }
+};
+
+class PrefixReducer {
+public:
+    explicit PrefixReducer(const std::string& filename) : f(filename), result(0) {};
+
+    int operator()(const std::string& key, const std::vector<std::string>& values) {
+        f << key << "\n";
+        if (values.size() > 1)
+            result = std::max(result, static_cast<int>(key.size()) + 1);
+        return result;
+    }
+
+private:
+    std::ofstream f;
+    int result;
+};
+
+
+bool file_exists(const std::string& filename) {
+    std::ifstream infile(filename);
     return infile.good();
 }
 
@@ -43,6 +77,15 @@ int main(int argc, char *argv[]) {
                   << std::endl;
         std::cout << argv[0] << " infile.txt 4 4" << std::endl;
         exit(0);
+    }
+
+    auto task_runner = MapReduceRunner<PrefixMapper, PrefixReducer>(src_file, num_threads_map, num_threads_reduce);
+    std::vector<int> reduce_results = task_runner.process();
+    auto result = std::max_element(reduce_results.cbegin(), reduce_results.cend());
+    if (result != reduce_results.cend()) {
+        std::cout << *result << std::endl;
+    } else {
+        std::cout << "empty result" << std::endl;
     }
 
     return 0;
