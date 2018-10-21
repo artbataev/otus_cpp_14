@@ -1,0 +1,4 @@
+some@some.ru
+some@some.ru.by
+other@other.ru
+other@gmail.com
