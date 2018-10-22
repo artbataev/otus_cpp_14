@@ -10,8 +10,12 @@
 namespace mapreduce {
     template<typename MapCls, typename ReduceCls>
     class MapReduceRunner {
-        using reduce_result_t = decltype(std::declval<ReduceCls>()("", {}));
     public:
+        using map_result_t = typename decltype(std::declval<MapCls>()("", ""))::value_type; // vector -> value_type
+        using map_value_t = typename decltype(std::declval<MapCls>()("", ""))::value_type::second_type;
+        // vector<pair> -> second_type is value
+        using reduce_result_t = decltype(std::declval<ReduceCls>()("", {}));
+
         MapReduceRunner(
                 std::string filename_,
                 int num_threads_map_,
@@ -30,13 +34,12 @@ namespace mapreduce {
         }
 
     private:
-        using kv_t = std::pair<std::string, std::string>;
         int num_threads_map;
         int num_threads_reduce;
         std::string filename;
         std::string path_to_save_reduce_files;
-        std::vector<kv_t> intermediate_data;
-        std::vector<std::vector<kv_t>> map_results;
+        std::vector<map_result_t> intermediate_data;
+        std::vector<std::vector<map_result_t>> map_results;
         std::vector<int> lines_indices;
 
         void run_map() {
@@ -65,7 +68,7 @@ namespace mapreduce {
 
         struct ReducerData {
             std::string key;
-            std::vector<std::string> values;
+            std::vector<map_value_t> values;
         };
 
         std::vector<reduce_result_t> run_reduce() {
@@ -92,7 +95,10 @@ namespace mapreduce {
             for (const auto& map_result: map_results)
                 for (auto& key: map_result)
                     intermediate_data.emplace_back(std::move(key));
-            std::sort(intermediate_data.begin(), intermediate_data.end()); // TODO: merge
+            std::sort(intermediate_data.begin(), intermediate_data.end(),
+                      [](const map_result_t& lhs, const map_result_t& rhs) {
+                          return lhs.first > rhs.first;
+                      }); // TODO: merge
         };
 
         void read_file_block(int i_start, int i_end, int container_idx) {
@@ -104,6 +110,7 @@ namespace mapreduce {
             while (file.tellg() < i_end && (file >> current_email)) {
                 if (file.tellg() <= i_end) { // additional check boundaries
                     auto map_result = map_func(filename, current_email);
+                    map_results[container_idx].reserve(map_results[container_idx].size() + map_result.size());
                     std::move(map_result.begin(), map_result.end(), std::back_inserter(map_results[container_idx]));
                 }
             }
