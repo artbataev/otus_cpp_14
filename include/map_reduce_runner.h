@@ -28,23 +28,36 @@ namespace mapreduce {
                 num_threads_map(num_threads_map_),
                 num_threads_reduce(num_threads_reduce_),
                 path_to_save_reduce_files(std::move(path_to_save_reduce_files_)),
-                map_results(static_cast<size_t>(num_threads_map_)) {}
+                map_results(static_cast<size_t>(num_threads_map_)),
+                reduce_results(static_cast<size_t>(num_threads_reduce_)) {}
 
 
         std::vector<reduce_result_t> process() {
             run_map();
             run_shuffle();
-            return run_reduce();
+            run_reduce();
+            return reduce_results;
         }
 
     private:
         int num_threads_map;
         int num_threads_reduce;
+
         const std::string filename;
         const std::string path_to_save_reduce_files;
-        std::vector<map_result_t> intermediate_data;
-        std::vector<std::vector<map_result_t>> map_results;
+
         std::vector<int> lines_indices;
+
+        std::vector<std::vector<map_result_t>> map_results;
+        std::vector<map_result_t> map_results_flat;
+
+        struct ReducerData {
+            std::string key;
+            std::vector<map_value_t> values;
+        };
+
+        std::vector<ReducerData> data_for_reducer;
+        std::vector<reduce_result_t> reduce_results;
 
 
         void run_map() {
@@ -57,45 +70,58 @@ namespace mapreduce {
 
             auto total_blocks = static_cast<int>(lines_indices.size()) - 1;
             auto num_threads = std::min(num_threads_map, total_blocks);
+            double step = static_cast<double>(total_blocks) / num_threads; // step >= 1
             std::vector<std::thread> map_threads;
-            for (int i = 0, j = 0, j_next = 0, used_blocks = 0; i < num_threads; i++) {
+            for (int i = 0, j = 0, j_next = 0; i < num_threads; i++) {
                 j = j_next;
-                j_next = j_next + (total_blocks - used_blocks) / (num_threads - i); // TODO: test
+                if (i == num_threads - 1)
+                    j_next = total_blocks;
+                else
+                    j_next = static_cast<int>(step * (i + 1));
                 map_threads.emplace_back([this, j, j_next, i] {
                     this->read_file_block(lines_indices[j], lines_indices[j_next], i);
                 });
-                used_blocks += j_next - j;
             }
             for (auto& t: map_threads)
                 t.join();
         }
 
-        struct ReducerData {
-            std::string key;
-            std::vector<map_value_t> values;
-        };
 
-
-        std::vector<reduce_result_t> run_reduce() {
-            ReduceCls reducer(path_to_save_reduce_files + "reduce_1.txt");
-            // TODO: multithreading
-            std::vector<ReducerData> buffer;
+        void run_reduce() {
             int last_j = -1;
-            for (const auto& elem: intermediate_data) {
-                if (last_j == -1 || buffer[last_j].key != elem.first) {
-                    buffer.push_back({elem.first, {elem.second}});
+            for (const auto& elem: map_results_flat) {
+                if (last_j == -1 || data_for_reducer[last_j].key != elem.first) {
+                    data_for_reducer.push_back({elem.first, {elem.second}});
                     last_j++;
                 } else {
-                    buffer[last_j].values.emplace_back(elem.second);
+                    data_for_reducer[last_j].values.emplace_back(elem.second);
                 }
             }
-            int result = 0;
-            for (const auto& elem: buffer)
-                result = reducer(elem.key, elem.values);
 
-            return {result};
+            auto num_threads = std::min(num_threads_reduce, static_cast<int>(data_for_reducer.size()));
+
+            std::vector<std::thread> reduce_threads;
+            auto total_blocks = static_cast<int>(data_for_reducer.size());
+            double step = static_cast<double>(total_blocks) / num_threads; // step >= 1
+            for (int i = 0, j = 0, j_next = 0; i < num_threads; i++) {
+                j = j_next;
+                if (i == num_threads - 1)
+                    j_next = total_blocks;
+                else
+                    j_next = static_cast<int>(step * (i + 1));
+                reduce_threads.emplace_back([this, j, j_next, i] {
+                    this->run_reducer(j, j_next, i);
+                });
+            }
+            for (auto& t: reduce_threads)
+                t.join();
         }
 
+        void run_reducer(int start_i, int end_i, int thread_idx) {
+            ReduceCls reducer(path_to_save_reduce_files + "reduce_" + std::to_string(thread_idx) + ".txt");
+            for (int i = start_i; i < end_i; i++)
+                reduce_results[thread_idx] = reducer(data_for_reducer[i].key, data_for_reducer[i].values);
+        }
 
         // async merge sort for sorted map results,
         // will work in not more than num_threads_map threads,
@@ -112,12 +138,12 @@ namespace mapreduce {
                 result2 = map_results[j];
             } else {
                 int middle = (i + j) / 2;
-//                result1 = merge_map_results(i, middle);
+                // result1 = merge_map_results(i, middle);
                 std::future<std::vector<map_result_t>> result1_future = std::async(
                         std::launch::async,
-                        [this, i, middle]{
-                    return this-> merge_map_results(i, middle);
-                });
+                        [this, i, middle] {
+                            return this->merge_map_results(i, middle);
+                        });
                 result2 = merge_map_results(middle + 1, j);
                 result1 = result1_future.get();
             }
@@ -143,7 +169,7 @@ namespace mapreduce {
 
         // sorting intermediate data
         void run_shuffle() {
-            intermediate_data = merge_map_results(0, map_results.size() - 1);
+            map_results_flat = merge_map_results(0, map_results.size() - 1);
         };
 
 
