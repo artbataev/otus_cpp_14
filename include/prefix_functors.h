@@ -18,10 +18,7 @@ namespace prefix {
             if (!email.empty()) {
                 result.reserve(email.size());
                 for (size_t n_prefix_elements = 1; n_prefix_elements <= email.size(); n_prefix_elements++) {
-                    result.emplace_back(
-                            std::make_pair(email.substr(0, n_prefix_elements),
-                                           std::make_pair(1, email))
-                    );
+                    result.emplace_back(email.substr(0, n_prefix_elements), std::make_pair(1, email));
                 }
             }
             return result;
