@@ -158,7 +158,7 @@ namespace mapreduce {
                     result.emplace_back(result2[i2++]);
                 else if (i2 >= result2.size())
                     result.emplace_back(result1[i1++]);
-                else if (result1[i1] < result2[i1])
+                else if (result1[i1].first <= result2[i2].first)
                     result.emplace_back(result1[i1++]);
                 else
                     result.emplace_back(result2[i2++]);
@@ -186,7 +186,7 @@ namespace mapreduce {
                 }
             }
             file.close();
-            std::sort(map_results[container_idx].begin(), map_results[container_idx].end());
+            std::stable_sort(map_results[container_idx].begin(), map_results[container_idx].end());
         }
     };
 }
