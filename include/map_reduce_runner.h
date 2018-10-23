@@ -6,6 +6,7 @@
 #include <thread>
 #include <chrono>
 #include <algorithm>
+#include <future>
 #include <cassert>
 
 namespace mapreduce {
@@ -96,7 +97,9 @@ namespace mapreduce {
         }
 
 
-        // merge sort for sorted map results
+        // async merge sort for sorted map results,
+        // will work in not more than num_threads_map threads,
+        // because: num_threads_map / 2 + num_threads_map / 4 + ... + 1 etc <= num_threads_map
         std::vector<map_result_t> merge_map_results(int i, int j) {
             assert(i <= j);
             if (i == j)
@@ -109,8 +112,14 @@ namespace mapreduce {
                 result2 = map_results[j];
             } else {
                 int middle = (i + j) / 2;
-                result1 = merge_map_results(i, middle);
+//                result1 = merge_map_results(i, middle);
+                std::future<std::vector<map_result_t>> result1_future = std::async(
+                        std::launch::async,
+                        [this, i, middle]{
+                    return this-> merge_map_results(i, middle);
+                });
                 result2 = merge_map_results(middle + 1, j);
+                result1 = result1_future.get();
             }
 
             std::vector<map_result_t> result{};
@@ -132,7 +141,7 @@ namespace mapreduce {
             return result;
         };
 
-
+        // sorting intermediate data
         void run_shuffle() {
             intermediate_data = merge_map_results(0, map_results.size() - 1);
         };
