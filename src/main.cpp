@@ -48,8 +48,15 @@ int main(int argc, char *argv[]) {
         exit(0);
     }
 
+    // original algorithm with prefixes generation, works correctly when there are NO duplicated emails
+//    using namespace prefix_no_duplicates;
+
+// original algorithm with prefixes generation, works correctly when there are duplicated emails
 //    using namespace prefix;
+
+    // optimized algorithm with first letter as key: no memory overhead, very fast, handles correctly duplicated emails
     using namespace prefix_optimized;
+
     auto task_runner = mapreduce::MapReduceRunner<PrefixMapper, PrefixReducer>(
             src_file, num_threads_map, num_threads_reduce
     );

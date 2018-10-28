@@ -30,7 +30,7 @@ namespace mapreduce {
                 path_to_save_reduce_files(std::move(path_to_save_reduce_files_)),
                 map_results(static_cast<size_t>(num_threads_map_)){}
 
-
+        // main function: map + shuffle + reduce
         std::vector<reduce_result_t> process() {
             run_map();
             run_shuffle();
@@ -50,6 +50,7 @@ namespace mapreduce {
         std::vector<std::vector<map_result_t>> map_results;
         std::vector<map_result_t> map_results_flat;
 
+        // usefull struct to prepare data for reduce
         struct ReducerData {
             std::string key;
             std::vector<map_value_t> values;
@@ -60,6 +61,7 @@ namespace mapreduce {
 
 
         void run_map() {
+            // reading file to get "\n" symbols position to split data for mapper
             std::ifstream infile(filename);
             std::string buf;
             lines_indices.push_back(0);
@@ -69,7 +71,7 @@ namespace mapreduce {
 
             auto total_blocks = static_cast<int>(lines_indices.size()) - 1;
             auto num_threads = std::min(num_threads_map, total_blocks);
-            double step = static_cast<double>(total_blocks) / num_threads; // step >= 1
+            double step = static_cast<double>(total_blocks) / num_threads; // step >= 1 always
             std::vector<std::thread> map_threads;
             for (int i = 0, j = 0, j_next = 0; i < num_threads; i++) {
                 j = j_next;
@@ -77,16 +79,20 @@ namespace mapreduce {
                     j_next = total_blocks;
                 else
                     j_next = static_cast<int>(step * (i + 1));
+
                 map_threads.emplace_back([this, j, j_next, i] {
-                    this->read_file_block(lines_indices[j], lines_indices[j_next], i);
+                    this->run_single_mapper(lines_indices[j], lines_indices[j_next], i);
                 });
             }
+
             for (auto& t: map_threads)
                 t.join();
         }
 
 
+        // groups data by key for reducer and run in threads reduce function
         void run_reduce() {
+            // grouping data (by key) for reducer: map_results_flat is sorted
             int last_j = -1;
             for (const auto& elem: map_results_flat) {
                 if (last_j == -1 || data_for_reducer[last_j].key != elem.first) {
@@ -110,14 +116,16 @@ namespace mapreduce {
                 else
                     j_next = static_cast<int>(step * (i + 1));
                 reduce_threads.emplace_back([this, j, j_next, i] {
-                    this->run_reducer(j, j_next, i);
+                    this->run_single_reducer(j, j_next, i);
                 });
             }
             for (auto& t: reduce_threads)
                 t.join();
         }
 
-        void run_reducer(int start_i, int end_i, int thread_idx) {
+        // runs reducer
+        // writes result for separated container, so there is no need to use mutex
+        void run_single_reducer(int start_i, int end_i, int thread_idx) {
             ReduceCls reducer(path_to_save_reduce_files + "reduce_" + std::to_string(thread_idx) + ".txt");
             for (int i = start_i; i < end_i; i++)
                 reduce_results[thread_idx] = reducer(data_for_reducer[i].key, data_for_reducer[i].values);
@@ -173,7 +181,9 @@ namespace mapreduce {
         };
 
 
-        void read_file_block(int i_start, int i_end, int container_idx) {
+        // reads data from file and calls map function
+        // writes to separated container: no need to use mutex
+        void run_single_mapper(int i_start, int i_end, int container_idx) {
             std::ifstream file(filename);
             file.seekg(i_start);
             std::string current_email;
