@@ -48,8 +48,11 @@ int main(int argc, char *argv[]) {
         exit(0);
     }
 
-    auto task_runner = mapreduce::MapReduceRunner<prefix::PrefixMapper,
-            prefix::PrefixReducer>(src_file, num_threads_map, num_threads_reduce);
+//    using namespace prefix;
+    using namespace prefix_optimized;
+    auto task_runner = mapreduce::MapReduceRunner<PrefixMapper, PrefixReducer>(
+            src_file, num_threads_map, num_threads_reduce
+    );
     std::vector<int> reduce_results = task_runner.process();
     auto result = std::max_element(reduce_results.cbegin(), reduce_results.cend());
     if (result != reduce_results.cend()) {

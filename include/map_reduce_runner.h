@@ -28,8 +28,7 @@ namespace mapreduce {
                 num_threads_map(num_threads_map_),
                 num_threads_reduce(num_threads_reduce_),
                 path_to_save_reduce_files(std::move(path_to_save_reduce_files_)),
-                map_results(static_cast<size_t>(num_threads_map_)),
-                reduce_results(static_cast<size_t>(num_threads_reduce_)) {}
+                map_results(static_cast<size_t>(num_threads_map_)){}
 
 
         std::vector<reduce_result_t> process() {
@@ -99,6 +98,7 @@ namespace mapreduce {
             }
 
             auto num_threads = std::min(num_threads_reduce, static_cast<int>(data_for_reducer.size()));
+            reduce_results = std::vector<reduce_result_t>(num_threads, reduce_result_t());
 
             std::vector<std::thread> reduce_threads;
             auto total_blocks = static_cast<int>(data_for_reducer.size());
