@@ -73,7 +73,10 @@ INSTANTIATE_TEST_CASE_P(MyGroup, AssignmentTestFromFile, ::testing::Values(
         TestParams{PROJECT_SOURCE_DIR + "/test/data/test.3.in.txt"s, 2, 1, 13},
         TestParams{PROJECT_SOURCE_DIR + "/test/data/test.3.in.txt"s, 1, 2, 13},
         TestParams{PROJECT_SOURCE_DIR + "/test/data/test.3.in.txt"s, 2, 8, 13},
-        TestParams{PROJECT_SOURCE_DIR + "/test/data/test.3.in.txt"s, 1000, 1000, 13}
+        TestParams{PROJECT_SOURCE_DIR + "/test/data/test.3.in.txt"s, 1000, 1000, 13},
+        TestParams{PROJECT_SOURCE_DIR + "/test/data/test.mg.in.txt"s, 1, 1, 3},
+        TestParams{PROJECT_SOURCE_DIR + "/test/data/test.mg.in.txt"s, 2, 2, 3},
+        TestParams{PROJECT_SOURCE_DIR + "/test/data/test.mg.in.txt"s, 3, 3, 3}
 ));
 
 
@@ -82,7 +85,10 @@ INSTANTIATE_TEST_CASE_P(MyGroup, AssignmentTestFromFileNoDuplicates, ::testing::
         TestParams{PROJECT_SOURCE_DIR + "/test/data/test.1.in.txt"s, 1, 1, 8},
         TestParams{PROJECT_SOURCE_DIR + "/test/data/test.1.in.txt"s, 2, 1, 8},
         TestParams{PROJECT_SOURCE_DIR + "/test/data/test.1.in.txt"s, 1, 2, 8},
-        TestParams{PROJECT_SOURCE_DIR + "/test/data/test.1.in.txt"s, 4, 4, 8}
+        TestParams{PROJECT_SOURCE_DIR + "/test/data/test.1.in.txt"s, 4, 4, 8},
+        TestParams{PROJECT_SOURCE_DIR + "/test/data/test.mg.in.txt"s, 1, 1, 3},
+        TestParams{PROJECT_SOURCE_DIR + "/test/data/test.mg.in.txt"s, 2, 2, 3},
+        TestParams{PROJECT_SOURCE_DIR + "/test/data/test.mg.in.txt"s, 3, 3, 3}
 ));
 
 int main(int argc, char **argv) {
