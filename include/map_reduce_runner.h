@@ -7,6 +7,7 @@
 #include <chrono>
 #include <algorithm>
 #include <future>
+#include <limits>
 #include <cassert>
 
 namespace mapreduce {
@@ -28,7 +29,7 @@ namespace mapreduce {
                 num_threads_map(num_threads_map_),
                 num_threads_reduce(num_threads_reduce_),
                 path_to_save_reduce_files(std::move(path_to_save_reduce_files_)),
-                map_results(static_cast<size_t>(num_threads_map_)){}
+                map_results(static_cast<size_t>(num_threads_map_)) {}
 
         // main function: map + shuffle + reduce
         std::vector<reduce_result_t> process() {
@@ -65,9 +66,15 @@ namespace mapreduce {
             std::ifstream infile(filename);
             std::string buf;
             lines_indices.push_back(0);
-            while (std::getline(infile, buf))
-                lines_indices.emplace_back(infile.tellg());
+            while (std::getline(infile, buf)) {
+                auto position = infile.tellg();
+                if (position >= 0)
+                    lines_indices.emplace_back(position);
+                else
+                    break;
+            }
             infile.close();
+            lines_indices.push_back(std::numeric_limits<int>::max());
 
             auto total_blocks = static_cast<int>(lines_indices.size()) - 1;
             auto num_threads = std::min(num_threads_map, total_blocks);
